@@ -1,0 +1,250 @@
+
+datasource db {
+  provider = "postgresql"   // or mysql/sqlite
+  url      = env("DATABASE_URL")
+}
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+model User {
+  id       Int    @id @default(autoincrement())
+  name     String
+  email    String @unique
+  password String
+  role     Role   @default(CLIENT)
+
+  admin    Admin?
+  client   Client?
+  staff    Staff?
+  bookings Booking[]
+  notifications Notification[]
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  CLIENT
+}
+
+model Admin {
+  id          Int    @id @default(autoincrement())
+  userId      Int    @unique
+  permissions Json?
+  department  String?
+
+  user        User   @relation(fields: [userId], references: [id])
+}
+
+
+model Client {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id])
+  bookings     Booking[]
+  reviews      Review[]
+  appointments Appointment[]
+  forms        Form[]
+  waitlists    Waitlist[]
+}
+
+model Appointment {
+  id        Int               @id @default(autoincrement())
+  clientId  Int
+  serviceId Int
+  staffId   Int?
+  date      DateTime
+  status    AppointmentStatus @default(PENDING)
+  notes     String?
+
+  client  Client   @relation(fields: [clientId], references: [id])
+  service Service  @relation(fields: [serviceId], references: [id])
+  staff   Staff?   @relation(fields: [staffId], references: [id])
+  booking Booking?
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+model Booking {
+  id            Int           @id @default(autoincrement())
+  appointmentId Int           @unique
+  clientId      Int
+  userId        Int?
+  promocodeId   Int?
+  status        BookingStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+  client      Client      @relation(fields: [clientId], references: [id])
+  user        User?       @relation(fields: [userId], references: [id])
+  promocode   Promocode?  @relation(fields: [promocodeId], references: [id])
+  payment     Payment?
+  form        Form?
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+model Form {
+  id        Int      @id @default(autoincrement())
+  clientId  Int
+  bookingId Int?     @unique
+  title     String
+  fields    Json // flexible storage for dynamic form fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client  Client   @relation(fields: [clientId], references: [id])
+  booking Booking? @relation(fields: [bookingId], references: [id])
+}
+
+model Payment {
+  id             Int           @id @default(autoincrement())
+  bookingId      Int           @unique
+  amount         Float
+  method         PaymentMethod
+  status         PaymentStatus @default(PENDING)
+  transactionRef String? // e.g., mobile money ref, card txn ID
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  MOBILE_MONEY
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  clientId  Int
+  serviceId Int?
+  staffId   Int?
+  rating    Int // e.g., 1–5 stars
+  comment   String?
+  createdAt DateTime @default(now())
+
+  client  Client   @relation(fields: [clientId], references: [id])
+  service Service? @relation(fields: [serviceId], references: [id])
+  staff   Staff?   @relation(fields: [staffId], references: [id])
+}
+
+model Promocode {
+  id          Int          @id @default(autoincrement())
+  code        String       @unique
+  description String?
+  discount    Float // percentage or fixed amount
+  type        DiscountType
+  validFrom   DateTime
+  validUntil  DateTime
+  isActive    Boolean      @default(true)
+
+  bookings Booking[]
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+model Service {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  duration    Int // in minutes
+  price       Float
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  appointments Appointment[]
+  reviews      Review[]
+  waitlists    Waitlist[]    @relation("ServiceWaitlist")
+}
+
+model Settings {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique // e.g., "working_hours", "cancellation_policy"
+  value       Json // flexible storage for different types of settings
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+model Waitlist {
+  id            Int            @id @default(autoincrement())
+  clientId      Int
+  serviceId     Int?
+  preferredDate DateTime?
+  status        WaitlistStatus @default(PENDING)
+  createdAt     DateTime       @default(now())
+
+  client  Client   @relation(fields: [clientId], references: [id])
+  service Service? @relation("ServiceWaitlist", fields: [serviceId], references: [id])
+}
+
+enum WaitlistStatus {
+  PENDING
+  NOTIFIED
+  BOOKED
+  CANCELLED
+}
+model Staff {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @unique
+  role        String    // e.g., "Stylist", "Admin"
+  bio         String?
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id])
+  appointments Appointment[]
+  reviews      Review[]
+}
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  message   String
+  type      NotificationType
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+enum NotificationType {
+  APPOINTMENT
+  PAYMENT
+  PROMOTION
+  SYSTEM
+}
+model Report {
+  id        Int      @id @default(autoincrement())
+  title     String
+  data      Json
+  createdAt DateTime @default(now())
+}
+

@@ -1,0 +1,48 @@
+// controllers/serviceController.js
+import serviceModel from '../models/service.js';
+
+export const createService = async (req, res) => {
+  try {
+    const service = await serviceModel.createService(req.body);
+    res.json(service);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+export const getService = async (req, res) => {
+  try {
+    const service = await serviceModel.getServiceById(parseInt(req.params.id));
+    if (!service) return res.status(404).json({ error: "Service not found" });
+    res.json(service);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+export const getServices = async (req, res) => {
+  try {
+    const services = await serviceModel.getAllServices();
+    res.json(services);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+export const updateService = async (req, res) => {
+  try {
+    const service = await serviceModel.updateService(parseInt(req.params.id), req.body);
+    res.json(service);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+export const deleteService = async (req, res) => {
+  try {
+    await serviceModel.deleteService(parseInt(req.params.id));
+    res.json({ message: "Service deleted successfully" });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
