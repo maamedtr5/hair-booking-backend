@@ -1,6 +1,9 @@
 // models/client.js
-import { PrismaClient } from "@prisma/client";
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
+
 const prisma = new PrismaClient();
+
 
 async function createClient(data) {
   return prisma.client.create({ data });

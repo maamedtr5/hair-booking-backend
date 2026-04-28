@@ -1,3 +1,4 @@
+import { prisma } from '../lib/prisma.js';
 import { createNotification, getNotificationById, getUserNotifications, markNotificationRead, deleteNotification } from '../models/notifications.js';
 
 export async function createNotificationHandler(req, res) { try { res.json(await createNotification(req.body)); } catch (err) { res.status(400).json({ error: err.message }); } }

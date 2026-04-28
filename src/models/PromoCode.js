@@ -1,6 +1,9 @@
 // models/promocode.js
-import { PrismaClient } from "@prisma/client";
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
+
 const prisma = new PrismaClient();
+
 
 async function createPromocode(data) {
   return prisma.promocode.create({ data });

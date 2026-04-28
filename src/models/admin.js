@@ -1,6 +1,9 @@
 // models/admin.js
-import { PrismaClient } from '@prisma/client';
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
+
 const prisma = new PrismaClient();
+
 
 export async function createAdmin(data) {
   return prisma.admin.create({ data });

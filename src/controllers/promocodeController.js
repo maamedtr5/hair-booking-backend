@@ -1,4 +1,5 @@
 // controllers/promocodeController.js
+import { prisma } from '../lib/prisma.js';
 import promocodeModel from '../models/promocode.js';
 
 export const createPromocode = async (req, res) => {

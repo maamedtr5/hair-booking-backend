@@ -1,4 +1,5 @@
 // controllers/clientController.js
+import { prisma } from '../lib/prisma.js';
 import clientModel from '../models/client.js';
 
 export const createClient = async (req, res) => {

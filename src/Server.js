@@ -35,6 +35,7 @@ app.get('/', (req, res) => {
 
 // Mount your existing routes
 app.use('/clients', clientRoutes);
+app.use('/users', userRoutes);
 app.use('/appointments', appointmentRoutes);
 app.use('/bookings', bookingRoutes);
 app.use('/forms', formRoutes);

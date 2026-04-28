@@ -1,4 +1,6 @@
 // controllers/formController.js
+
+import { prisma } from '../lib/prisma.js';
 import formModel from '../models/form.js';
 
 export const createForm = async (req, res) => {

@@ -1,4 +1,5 @@
 // controllers/appointmentController.js
+import { prisma } from '../lib/prisma.js';
 import appointmentModel from '../models/appointment.js';
 
 export const createAppointment = async (req, res) => {

@@ -1,6 +1,9 @@
 // models/payment.js
-import { PrismaClient } from "@prisma/client";
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
+
 const prisma = new PrismaClient();
+
 
 async function createPayment(data) {
   return prisma.payment.create({ data });

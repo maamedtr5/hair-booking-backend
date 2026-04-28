@@ -1,6 +1,9 @@
 // models/booking.js
-import { PrismaClient } from "@prisma/client";
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
+
 const prisma = new PrismaClient();
+
 
 async function createBooking(data) {
   return prisma.booking.create({ data });

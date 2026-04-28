@@ -1,4 +1,5 @@
 // controllers/bookingController.js
+import { prisma } from '../lib/prisma.js';
 import bookingModel from '../models/booking.js';
 
 export const createBooking = async (req, res) => {

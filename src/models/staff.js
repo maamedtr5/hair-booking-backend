@@ -1,5 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
+
 const prisma = new PrismaClient();
+
 
 export async function createStaff(data) { return prisma.staff.create({ data }); }
 export async function getStaffById(id) { return prisma.staff.findUnique({ where: { id }, include: { user: true, appointments: true, reviews: true } }); }

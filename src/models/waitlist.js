@@ -1,17 +1,25 @@
-// models/waitlist.js
-import { PrismaClient } from '@prisma/client';
+// src/models/waitlist.js
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
+
 const prisma = new PrismaClient();
 
 export async function addToWaitlist(data) {
   return prisma.waitlist.create({ data });
 }
 
-export async function getWaitlistEntryById(id) {
-  return prisma.waitlist.findUnique({
-    where: { id },
-    include: { client: true, service: true }
-  });
+export async function getWaitlistById(id) {
+  return prisma.waitlist.findUnique({ where: { id } });
 }
 
-export async function getAllWaitlistEntries() {
-  return prisma
+export async function getAllWaitlists() {
+  return prisma.waitlist.findMany();
+}
+
+export async function updateWaitlist(id, data) {
+  return prisma.waitlist.update({ where: { id }, data });
+}
+
+export async function deleteWaitlistEntry(id) {
+  return prisma.waitlist.delete({ where: { id } });
+}

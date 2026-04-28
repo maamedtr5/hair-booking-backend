@@ -1,4 +1,6 @@
+
 // controllers/paymentController.js
+import { prisma } from '../lib/prisma.js';
 import paymentModel from '../models/payment.js';
 
 export const createPayment = async (req, res) => {

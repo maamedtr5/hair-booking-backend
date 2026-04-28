@@ -1,3 +1,4 @@
+import { prisma } from '../lib/prisma.js';
 import { createStaff, getStaffById, getAllStaff, updateStaff, deleteStaff } from '../models/staff.js';
 
 export async function createStaffHandler(req, res) { try { res.json(await createStaff(req.body)); } catch (err) { res.status(400).json({ error: err.message }); } }

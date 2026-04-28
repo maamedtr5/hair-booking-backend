@@ -1,4 +1,5 @@
 // controllers/settingsController.js
+import { prisma } from '../lib/prisma.js';
 import settingsModel from '../models/settings.js';
 
 export const createSetting = async (req, res) => {

@@ -1,4 +1,5 @@
 // controllers/serviceController.js
+import { prisma } from '../lib/prisma.js';
 import serviceModel from '../models/service.js';
 
 export const createService = async (req, res) => {

@@ -1,5 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
+
 const prisma = new PrismaClient();
+
 
 export async function createNotification(data) { return prisma.notification.create({ data }); }
 export async function getNotificationById(id) { return prisma.notification.findUnique({ where: { id }, include: { user: true } }); }

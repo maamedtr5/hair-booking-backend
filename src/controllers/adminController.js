@@ -1,36 +1,54 @@
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+// src/controllers/adminController.js
+import { prisma } from '../lib/prisma.js';
 
-const prisma = new PrismaClient();
-
-export const register = async (req, res) => {
+export async function createAdminHandler(req, res) {
   try {
-    const { name, email, password, role } = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const admin = await prisma.admin.create({ data: req.body });
+    res.json(admin);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
 
-    const user = await prisma.user.create({
-      data: { name, email, password: hashedPassword, role }
+export async function getAdminHandler(req, res) {
+  try {
+    const admin = await prisma.admin.findUnique({
+      where: { id: parseInt(req.params.id) },
+      include: { user: true }
     });
-
-    res.json(user);
+    if (!admin) return res.status(404).json({ error: "Admin not found" });
+    res.json(admin);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
-};
+}
 
-export const login = async (req, res) => {
+export async function getAdminsHandler(req, res) {
   try {
-    const { email, password } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
-
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
-
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1d" });
-    res.json({ token });
+    const admins = await prisma.admin.findMany({ include: { user: true } });
+    res.json(admins);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
-};
+}
+
+export async function updateAdminHandler(req, res) {
+  try {
+    const admin = await prisma.admin.update({
+      where: { id: parseInt(req.params.id) },
+      data: req.body
+    });
+    res.json(admin);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
+
+export async function deleteAdminHandler(req, res) {
+  try {
+    await prisma.admin.delete({ where: { id: parseInt(req.params.id) } });
+    res.json({ message: "Admin deleted successfully" });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
