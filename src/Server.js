@@ -17,6 +17,11 @@ import serviceRoutes from './routes/serviceRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import waitlistRoutes from './routes/waitlistRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import authRoutes from './auth/authRoutes.js';
+import * as authController from './auth/authController.js';
+import slotRoutes from './routes/slotRoutes.js';
+import webhookRoutes from './routes/webhookRoutes.js';
 
 // Initialize dotenv
 dotenv.config();
@@ -27,6 +32,11 @@ const PORT = process.env.PORT || 5001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use((req, res, next) => {
+  console.log('Request body:', req.body);
+  next();
+});
+app.use('/auth',authRoutes); // Mount auth routes
 
 // Root route
 app.get('/', (req, res) => {
@@ -48,8 +58,12 @@ app.use('/waitlist', waitlistRoutes);
 app.use('/staff', staffRoutes);
 app.use('/admin', adminRoutes);
 app.use('/reports', reportRoutes);
-
-
+app.use('/notifications', notificationRoutes);
+app.use('/auth', authRoutes);
+app.post('/auth/register', authController.register);
+app.post('/auth/login', authController.login);
+app.use('/slots', slotRoutes);
+app.use('/webhooks', webhookRoutes); //  webhook routes
 // Add a test route
 app.get('/staff/hello', (req, res) => {
   res.send('Hello from staff route!');

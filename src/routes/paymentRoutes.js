@@ -1,12 +1,14 @@
 import express from 'express';
-import * as paymentController from '../controllers/paymentController.js';
+import { initializePayment, markPaymentSuccess, markPaymentFailed } from '../controllers/paymentController.js';
+import { authenticate, authorizeRoles } from '../auth/authMiddleware.js';
 
 const router = express.Router();
 
-router.post('/', paymentController.createPayment);
-router.get('/:id', paymentController.getPayment);
-router.get('/', paymentController.getPayments);
-router.put('/:id', paymentController.updatePayment);
-router.delete('/:id', paymentController.deletePayment);
+// Initialize payment (Paystack, Cash, Mobile Money)
+router.post('/init', authenticate, initializePayment);
+
+// Admin/stylist updates static payment status
+router.put('/:id/success', authenticate, authorizeRoles('ADMIN', 'STYLIST'), markPaymentSuccess);
+router.put('/:id/failed', authenticate, authorizeRoles('ADMIN', 'STYLIST'), markPaymentFailed);
 
 export default router;

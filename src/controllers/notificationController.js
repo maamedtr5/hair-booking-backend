@@ -1,8 +1,59 @@
-import { prisma } from '../lib/prisma.js';
-import { createNotification, getNotificationById, getUserNotifications, markNotificationRead, deleteNotification } from '../models/notifications.js';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 
-export async function createNotificationHandler(req, res) { try { res.json(await createNotification(req.body)); } catch (err) { res.status(400).json({ error: err.message }); } }
-export async function getNotificationHandler(req, res) { try { const n = await getNotificationById(parseInt(req.params.id)); if (!n) return res.status(404).json({ error: "Notification not found" }); res.json(n); } catch (err) { res.status(400).json({ error: err.message }); } }
-export async function getUserNotificationsHandler(req, res) { try { res.json(await getUserNotifications(parseInt(req.params.userId))); } catch (err) { res.status(400).json({ error: err.message }); } }
-export async function markNotificationReadHandler(req, res) { try { res.json(await markNotificationRead(parseInt(req.params.id))); } catch (err) { res.status(400).json({ error: err.message }); } }
-export async function deleteNotificationHandler(req, res) { try { await deleteNotification(parseInt(req.params.id)); res.json({ message: "Notification deleted successfully" }); } catch (err) { res.status(400).json({ error: err.message }); } }
+export const getNotificationsHandler = async (req, res) => {
+  try {
+    const notifications = await prisma.notification.findMany({
+      where: { userId: parseInt(req.params.userId) },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(notifications);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const createNotificationHandler = async (req, res) => {
+  try {
+    const { userId, message, type } = req.body;
+
+    const notification = await prisma.notification.create({
+      data: {
+        userId: parseInt(userId), // 👈 convert string to Int
+        message,
+        type
+      }
+    });
+
+    res.status(201).json(notification);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+
+export const bulkMarkAsReadHandler = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    await prisma.notification.updateMany({
+      where: { id: { in: ids } },
+      data: { read: true }
+    });
+    res.json({ message: 'Notifications marked as read' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+export const markAllAsReadHandler = async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    await prisma.notification.updateMany({
+      where: { userId },
+      data: { read: true }
+    });
+    res.json({ message: 'All notifications marked as read' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};

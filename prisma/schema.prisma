@@ -1,10 +1,13 @@
 // prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
+  
+  
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -48,24 +51,33 @@ model Client {
   user         User          @relation(fields: [userId], references: [id])
   bookings     Booking[]
   reviews      Review[]
-  appointments Appointment[]
   forms        Form[]
   waitlists    Waitlist[]
 }
 
+model Staff {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @unique
+  bio         String?
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id])
+  appointments Appointment[]
+  reviews      Review[]
+}
+
 model Appointment {
   id        Int               @id @default(autoincrement())
-  clientId  Int
   serviceId Int
   staffId   Int?
   date      DateTime
   status    AppointmentStatus @default(PENDING)
   notes     String?
 
-  client  Client   @relation(fields: [clientId], references: [id])
   service Service  @relation(fields: [serviceId], references: [id])
   staff   Staff?   @relation(fields: [staffId], references: [id])
   booking Booking?
+  slots   Slot[]
 }
 
 enum AppointmentStatus {
@@ -73,6 +85,16 @@ enum AppointmentStatus {
   CONFIRMED
   COMPLETED
   CANCELLED
+}
+
+model Slot {
+  id            Int      @id @default(autoincrement())
+  appointmentId Int
+  startTime     DateTime
+  endTime       DateTime
+  isBooked      Boolean  @default(false)
+
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
 }
 
 model Booking {
@@ -112,23 +134,33 @@ model Form {
   client  Client   @relation(fields: [clientId], references: [id])
   booking Booking? @relation(fields: [bookingId], references: [id])
 }
-
 model Payment {
-  id             Int           @id @default(autoincrement())
-  bookingId      Int           @unique
+  id             Int               @id @default(autoincrement())
+  bookingId      Int               @unique
   amount         Float
+  currency       String            @default("GHS") // store currency explicitly
   method         PaymentMethod
-  status         PaymentStatus @default(PENDING)
-  transactionRef String? // e.g., mobile money ref, card txn ID
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  provider       PaymentProvider
+  status         PaymentStatus     @default(PENDING)
+  transactionRef String?           // gateway reference (Paystack ref, MoMo txn ID, etc.)
+  externalId     String?           // unique ID returned by provider
+  metadata       Json?             // flexible storage for provider-specific data
+  errorMessage   String?           // capture failure reason
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
-  booking Booking @relation(fields: [bookingId], references: [id])
+  booking        Booking             @relation(fields: [bookingId], references: [id])
 }
 
 enum PaymentMethod {
   CASH
   CARD
+  MOBILE_MONEY
+}
+
+enum PaymentProvider {
+  PAYSTACK
+  CASH
   MOBILE_MONEY
 }
 
@@ -212,38 +244,37 @@ enum WaitlistStatus {
   BOOKED
   CANCELLED
 }
-model Staff {
-  id          Int       @id @default(autoincrement())
-  userId      Int       @unique
-  role        String    // e.g., "Stylist", "Admin"
-  bio         String?
-  createdAt   DateTime  @default(now())
 
-  user        User      @relation(fields: [userId], references: [id])
-  appointments Appointment[]
-  reviews      Review[]
-}
 model Notification {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  message   String
-  type      NotificationType
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  message     String
+  type        NotificationType  @default(GENERAL) // e.g., APPOINTMENT, PAYMENT, PROMOTION, SYSTEM
+  status      NotificationStatus @default(QUEUED)
+  read        Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   user      User     @relation(fields: [userId], references: [id])
 }
 
 enum NotificationType {
+  GENERAL
   APPOINTMENT
   PAYMENT
   PROMOTION
   SYSTEM
 }
+enum NotificationStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+}
+
 model Report {
   id        Int      @id @default(autoincrement())
   title     String
   data      Json
   createdAt DateTime @default(now())
 }
-

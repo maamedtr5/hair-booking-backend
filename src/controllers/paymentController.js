@@ -1,49 +1,56 @@
+import { handlePayment } from '../services/payment/providerService.js';
+import { PrismaClient } from '@prisma/client';
 
-// controllers/paymentController.js
-import { prisma } from '../lib/prisma.js';
-import paymentModel from '../models/payment.js';
+const prisma = new PrismaClient();
 
-export const createPayment = async (req, res) => {
+export const initializePayment = async (req, res) => {
+  const { bookingId, amount, method, provider, metadata } = req.body;
+
   try {
-    const payment = await paymentModel.createPayment(req.body);
+    // Call unified provider service
+    const response = await handlePayment(provider, amount, metadata);
+
+    // Save payment record
+    const payment = await prisma.payment.create({
+      data: {
+        bookingId,
+        amount,
+        method,
+        provider,
+        status: 'PENDING',
+        transactionRef: response.reference,
+        externalId: response.externalId,
+        metadata
+      }
+    });
+
+    res.json({ payment, checkoutUrl: response.checkoutUrl });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+// Admin or stylist marks payment as SUCCESS
+export const markPaymentSuccess = async (req, res) => {
+  try {
+    const payment = await prisma.payment.update({
+      where: { id: parseInt(req.params.id) },
+      data: { status: 'SUCCESS' }
+    });
     res.json(payment);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 };
 
-export const getPayment = async (req, res) => {
+// Admin or stylist marks payment as FAILED
+export const markPaymentFailed = async (req, res) => {
   try {
-    const payment = await paymentModel.getPaymentById(parseInt(req.params.id));
-    if (!payment) return res.status(404).json({ error: "Payment not found" });
+    const payment = await prisma.payment.update({
+      where: { id: parseInt(req.params.id) },
+      data: { status: 'FAILED' }
+    });
     res.json(payment);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};
-
-export const getPayments = async (req, res) => {
-  try {
-    const payments = await paymentModel.getAllPayments();
-    res.json(payments);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};
-
-export const updatePayment = async (req, res) => {
-  try {
-    const payment = await paymentModel.updatePayment(parseInt(req.params.id), req.body);
-    res.json(payment);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};
-
-export const deletePayment = async (req, res) => {
-  try {
-    await paymentModel.deletePayment(parseInt(req.params.id));
-    res.json({ message: "Payment deleted successfully" });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
