@@ -1,0 +1,80 @@
+openapi: 3.0.0
+info:
+  title: Hair Booking API
+  version: 1.0.0
+  description: API documentation for the Hair Booking backend
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+                  enum: [ADMIN, STAFF, CLIENT]
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: Validation error
+
+  /appointments:
+    get:
+      summary: Get all appointments
+      responses:
+        '200':
+          description: List of appointments
+    post:
+      summary: Create a new appointment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date:
+                  type: string
+                  format: date-time
+                service:
+                  type: string
+                clientId:
+                  type: string
+      responses:
+        '201':
+          description: Appointment created
+        '400':
+          description: Validation error
+
+  /payments/initialize:
+    post:
+      summary: Initialize Paystack payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: number
+                email:
+                  type: string
+      responses:
+        '200':
+          description: Payment initialized
+        '401':
+          description: Unauthorized

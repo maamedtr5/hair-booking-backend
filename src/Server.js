@@ -1,6 +1,10 @@
+import path from 'path'; 
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import {env} from './config/env.js';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs'; // Fixed typo
 
 // Import your routes
 import adminRoutes from "./routes/adminRoutes.js";
@@ -13,7 +17,7 @@ import formRoutes from './routes/formRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import promocodeRoutes from './routes/promocodeRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
-import serviceRoutes from './routes/serviceRoutes.js';
+import serviceRoutes from './routes/serviceRoutes.js'; // Fixed typo
 import settingsRoutes from './routes/settingsRoutes.js';
 import waitlistRoutes from './routes/waitlistRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
@@ -28,6 +32,11 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
+const swaggerDocument = YAML.load(
+  path.join(process.cwd(), 'docs', 'swagger.yaml')
+);
+
+
 
 // Middleware
 app.use(cors());
@@ -36,7 +45,12 @@ app.use((req, res, next) => {
   console.log('Request body:', req.body);
   next();
 });
-app.use('/auth',authRoutes); // Mount auth routes
+
+// Swagger UI 
+if (swaggerDocument) {
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+  console.log(' API Documentation available at http://localhost:' + PORT + '/api-docs');
+}
 
 // Root route
 app.get('/', (req, res) => {
@@ -44,6 +58,7 @@ app.get('/', (req, res) => {
 });
 
 // Mount your existing routes
+app.use('/auth', authRoutes); // Keep only one auth route mount
 app.use('/clients', clientRoutes);
 app.use('/users', userRoutes);
 app.use('/appointments', appointmentRoutes);
@@ -59,17 +74,20 @@ app.use('/staff', staffRoutes);
 app.use('/admin', adminRoutes);
 app.use('/reports', reportRoutes);
 app.use('/notifications', notificationRoutes);
-app.use('/auth', authRoutes);
-app.post('/auth/register', authController.register);
-app.post('/auth/login', authController.login);
 app.use('/slots', slotRoutes);
-app.use('/webhooks', webhookRoutes); //  webhook routes
-// Add a test route
+app.use('/webhooks', webhookRoutes);
+
+// These are redundant if already handled in authRoutes
+// app.post('/auth/register', authController.register);
+// app.post('/auth/login', authController.login);
+
+// Test route
 app.get('/staff/hello', (req, res) => {
   res.send('Hello from staff route!');
 });
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(` Server running on http://localhost:${PORT}`);
+  console.log(` Environment: ${process.env.NODE_ENV || 'development'}`);
 });
