@@ -1,10 +1,10 @@
-// config/env.js
+// src/config/env.js
 import dotenv from 'dotenv';
 
 // Load .env file
 dotenv.config();
 
-// Validate required variables
+// Validate required variables for core backend
 const required = ['PORT', 'DATABASE_URL', 'JWT_SECRET', 'PAYSTACK_SECRET'];
 required.forEach((key) => {
   if (!process.env[key]) {
@@ -12,10 +12,30 @@ required.forEach((key) => {
   }
 });
 
-// Export config object
+// Export config object (merge all variables here)
 export const env = {
+  // Core backend
   port: process.env.PORT,
   dbUrl: process.env.DATABASE_URL,
   jwtSecret: process.env.JWT_SECRET,
   paystackSecret: process.env.PAYSTACK_SECRET,
+
+  // Email + business info
+  EMAIL_HOST: process.env.EMAIL_HOST,
+  EMAIL_PORT: process.env.EMAIL_PORT,
+  EMAIL_USER: process.env.EMAIL_USER,
+  EMAIL_PASSWORD: process.env.EMAIL_PASSWORD,
+  EMAIL_FROM: process.env.EMAIL_FROM,
+  BUSINESS_NAME: process.env.BUSINESS_NAME,
+  BUSINESS_ADDRESS: process.env.BUSINESS_ADDRESS,
+  BUSINESS_PHONE: process.env.BUSINESS_PHONE,
+  BUSINESS_EMAIL: process.env.BUSINESS_EMAIL,
+  FRONTEND_URL: process.env.FRONTEND_URL,
+
+  // Twilio (for SMS)
+  TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
+  TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
+  TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER,
 };
+
+

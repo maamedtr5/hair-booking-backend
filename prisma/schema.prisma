@@ -24,7 +24,7 @@ model User {
   notifications Notification[]
 }
 
-enum Role {
+enum Role {e
   ADMIN
   STAFF
   CLIENT
@@ -73,6 +73,12 @@ model Appointment {
   date      DateTime
   status    AppointmentStatus @default(PENDING)
   notes     String?
+
+
+  //  for reminder tracking
+  reminderScheduled   Boolean  @default(false)
+  reminderSent        Boolean  @default(false)
+  reminderSentAt      DateTime?
 
   service Service  @relation(fields: [serviceId], references: [id])
   staff   Staff?   @relation(fields: [staffId], references: [id])

@@ -13,9 +13,8 @@ you can merge admin logic into the auth controller and enforce role-based access
   - `swagger.yaml`: define your API endpoints for frontend devs and external integrations.  
   👉 Helps you and others test endpoints without guessing.
 
-- **Jobs**  
-  - `reminderJobs.js`: background tasks (e.g., send SMS/email reminders for appointments).  
-  👉 Use BullMQ or Agenda to schedule jobs.
+
+
 - **`db.js`**: keep it — centralizes Prisma/Postgres connection.  
 - **`index.js`**: optional. If unused, you can delete it.                                               
 
