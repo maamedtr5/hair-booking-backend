@@ -1,8 +1,6 @@
 // prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
-  
-  
 }
 
 datasource db {
@@ -17,14 +15,19 @@ model User {
   password String
   role     Role   @default(CLIENT)
 
-  admin    Admin?
-  client   Client?
-  staff    Staff?
-  bookings Booking[]
+  // Google Calendar integration
+  googleAccessToken   String?   @db.Text
+  googleRefreshToken  String?   @db.Text
+  googleTokenExpiry   DateTime?
+
+  admin         Admin?
+  client        Client?
+  staff         Staff?
+  bookings      Booking[]
   notifications Notification[]
 }
 
-enum Role {e
+enum Role {
   ADMIN
   STAFF
   CLIENT
@@ -38,7 +41,6 @@ model Admin {
 
   user        User   @relation(fields: [userId], references: [id])
 }
-
 
 model Client {
   id        Int      @id @default(autoincrement())
@@ -61,7 +63,7 @@ model Staff {
   bio         String?
   createdAt   DateTime  @default(now())
 
-  user        User      @relation(fields: [userId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
   appointments Appointment[]
   reviews      Review[]
 }
@@ -74,11 +76,13 @@ model Appointment {
   status    AppointmentStatus @default(PENDING)
   notes     String?
 
-
-  //  for reminder tracking
-  reminderScheduled   Boolean  @default(false)
-  reminderSent        Boolean  @default(false)
+  // Reminder tracking
+  reminderScheduled   Boolean   @default(false)
+  reminderSent        Boolean   @default(false)
   reminderSentAt      DateTime?
+
+  // Google Calendar event ID
+  googleEventId       String?
 
   service Service  @relation(fields: [serviceId], references: [id])
   staff   Staff?   @relation(fields: [staffId], references: [id])
@@ -140,6 +144,7 @@ model Form {
   client  Client   @relation(fields: [clientId], references: [id])
   booking Booking? @relation(fields: [bookingId], references: [id])
 }
+
 model Payment {
   id             Int               @id @default(autoincrement())
   bookingId      Int               @unique
@@ -155,7 +160,7 @@ model Payment {
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
-  booking        Booking             @relation(fields: [bookingId], references: [id])
+  booking        Booking           @relation(fields: [bookingId], references: [id])
 }
 
 enum PaymentMethod {
@@ -252,14 +257,14 @@ enum WaitlistStatus {
 }
 
 model Notification {
-  id          Int       @id @default(autoincrement())
+  id          Int                @id @default(autoincrement())
   userId      Int
   message     String
-  type        NotificationType  @default(GENERAL) // e.g., APPOINTMENT, PAYMENT, PROMOTION, SYSTEM
+  type        NotificationType   @default(GENERAL) // e.g., APPOINTMENT, PAYMENT, PROMOTION, SYSTEM
   status      NotificationStatus @default(QUEUED)
-  read        Boolean    @default(false)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  read        Boolean            @default(false)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 
   user      User     @relation(fields: [userId], references: [id])
 }
@@ -271,6 +276,7 @@ enum NotificationType {
   PROMOTION
   SYSTEM
 }
+
 enum NotificationStatus {
   QUEUED
   SENT

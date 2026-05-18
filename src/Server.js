@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import { env } from './config/env.js';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
+import { oauth2Client, getAuthUrl, getTokensFromCode } from './services/googleCalendarService.js';
 
 // Import your routes
 import adminRoutes from "./routes/adminRoutes.js";
@@ -72,6 +73,24 @@ app.get('/jobs/stats', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+app.get('/auth/google', (req, res) => {
+  const scopes = ['https://www.googleapis.com/auth/calendar'];
+  const url = oauth2Client.generateAuthUrl({
+    access_type: 'offline',
+    scope: scopes,
+  });
+  res.redirect(url);
+});
+
+app.get('/auth/google', (req, res) => {
+  const scopes = ['https://www.googleapis.com/auth/calendar'];
+  const url = oauth2Client.generateAuthUrl({
+    access_type: 'offline',
+    scope: scopes,
+  });
+  res.redirect(url);
 });
 
 // Mount your existing routes
