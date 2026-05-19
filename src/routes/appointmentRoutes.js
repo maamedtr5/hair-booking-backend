@@ -12,6 +12,12 @@ import {
   updateCalendarEvent
 } from '../services/googleCalendarService.js';
 import pkg from '@prisma/client';
+import { 
+  validateAppointmentCreate, 
+  validateAppointmentUpdate,
+  validateBulkCancel 
+} from '../validators/appointmentValidator.js';
+
 const { PrismaClient } = pkg;
 
 const router = express.Router();
@@ -19,7 +25,7 @@ const prisma = new PrismaClient();
 
 //  CREATE APPOINTMENT
 // Public: create a new appointment  
-router.post('/', async (req, res) => {
+router.post('/',  validateAppointmentCreate, async (req, res) => {
   try {
     // Create appointment via controller
     const appointment = await appointmentController.createAppointment(req, res);
@@ -65,7 +71,7 @@ router.get('/', authenticate, appointmentController.getAppointments);
 
 // ==================== UPDATE APPOINTMENT ====================
 // Admin/Staff only: update appointment
-router.put('/:id', authenticate, requireRole(['admin','staff']), async (req, res) => {
+router.put('/:id', authenticate, requireRole(['admin','staff']), validateAppointmentUpdate, async (req, res) => {
   try {
     const appointmentId = req.params.id;
 
@@ -269,7 +275,7 @@ router.put('/:id/reschedule', authenticate, requireRole(['admin','staff']), asyn
 
 // ==================== BULK CANCEL APPOINTMENTS ====================
 // Admin/Staff only: bulk cancel appointments
-router.post('/bulk/cancel', authenticate, requireRole(['admin','staff']), async (req, res) => {
+router.post('/bulk/cancel', authenticate, requireRole(['admin','staff']), validateBulkCancel, async (req, res) => {
   try {
     const { appointmentIds } = req.body;
 

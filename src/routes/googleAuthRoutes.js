@@ -4,7 +4,7 @@ import {
   getAuthUrl,
   getTokensFromCode,
 } from '../services/googleCalendarService.js';
-import { authenticate } from '../middleware/authMiddleware.js';
+import { authenticate } from '../auth/authMiddleware.js';
 import pkg from '@prisma/client';
 const { PrismaClient } = pkg;
 

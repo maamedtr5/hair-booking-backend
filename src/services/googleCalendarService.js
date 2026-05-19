@@ -164,7 +164,7 @@ export const createCalendarEvent = async (userId, appointmentData) => {
 
     // Create the event
     const response = await calendar.events.insert({
-      calendarId: 'primary',
+      calendarId: 'primary',    
       requestBody: event,
       sendUpdates: 'all', // Send email notifications to attendees
     });

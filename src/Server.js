@@ -1,14 +1,14 @@
-// server.js
-import path from 'path'; 
+// src/Server.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from 'path';
 import { env } from './config/env.js';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
-import { oauth2Client, getAuthUrl, getTokensFromCode } from './services/googleCalendarService.js';
 
-// Import your routes
+
+// Import routes
 import adminRoutes from "./routes/adminRoutes.js";
 import staffRoutes from "./routes/staffRoutes.js";
 import userRoutes from './routes/userRoutes.js';
@@ -27,121 +27,192 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import authRoutes from './auth/authRoutes.js';
 import slotRoutes from './routes/slotRoutes.js';
 import webhookRoutes from './routes/webhookRoutes.js';
-import emailRoutes from './routes/emailRoutes.js';
+import googleAuthRoutes from './routes/googleAuthRoutes.js';
 
-// Jobs & services
-import { 
-  scheduleDailyReminders, 
-   getQueueStats 
-} from './jobs/reminderJobs.js';
+// Import background jobs and services
+import { scheduleDailyReminders, getQueueStats } from './jobs/reminderJobs.js';
 import { verifyEmailConfig } from './services/emailService.js';
 import { verifySMSConfig } from './services/smsService.js';
+import { verifyCalendarConfig } from './services/googleCalendarService.js';
 
-// Initialize dotenv
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
-const swaggerDocument = YAML.load(
-  path.join(process.cwd(), 'docs', 'swagger.yaml')
-);
 
-// Middleware
+// Load Swagger documentation
+let swaggerDocument;
+try {
+  swaggerDocument = YAML.load(
+    path.join(process.cwd(), 'docs', 'swagger.yaml')
+  );
+} catch (error) {
+  console.warn('Swagger documentation not found. Skipping API docs.');
+}
+
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Request logging
 app.use((req, res, next) => {
-  console.log('Request body:', req.body);
+  console.log(`${req.method} ${req.path}`, req.body);
   next();
 });
 
-// Swagger UI 
+// JSON parsing error handler
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid JSON format',
+      error: err.message,
+    });
+  }
+  next();
+});
+
+// Swagger UI
 if (swaggerDocument) {
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-  console.log(`📖 API Documentation available at http://localhost:${PORT}/api-docs`);
+  console.log('API Documentation available at /api-docs');
 }
+
+import { errorHandler } from './utils/errorHandler.js';
 
 // Root route
 app.get('/', (req, res) => {
-  res.send('API is running...');
-});
-
-// Monitoring route for jobs
-app.get('/jobs/stats', async (req, res) => {
-  try {
-    const stats = await getQueueStats();
-    res.json(stats);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get('/auth/google', (req, res) => {
-  const scopes = ['https://www.googleapis.com/auth/calendar'];
-  const url = oauth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: scopes,
+  res.json({
+    success: true,
+    message: 'Hair Booking API is running',
+    version: '1.0.0',
+    endpoints: {
+      docs: '/api-docs',
+      health: '/health',
+      auth: '/auth',
+      users: '/users',
+      clients: '/clients',
+      staff: '/staff',
+      admin: '/admin',
+      appointments: '/appointments',
+      bookings: '/bookings',
+      services: '/services',
+      payments: '/payments',
+      promocodes: '/promocodes',
+      reviews: '/reviews',
+      forms: '/forms',
+      settings: '/settings',
+      waitlist: '/waitlist',
+      notifications: '/notifications',
+      reports: '/reports',
+      slots: '/slots',
+      webhooks: '/webhooks',
+    },
   });
-  res.redirect(url);
 });
 
-app.get('/auth/google', (req, res) => {
-  const scopes = ['https://www.googleapis.com/auth/calendar'];
-  const url = oauth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: scopes,
+// Health check
+app.get('/health', (req, res) => {
+  res.json({
+    success: true,
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
   });
-  res.redirect(url);
 });
 
-// Mount your existing routes
+// Routes
 app.use('/auth', authRoutes);
-app.use('/clients', clientRoutes);
+app.use('/auth', googleAuthRoutes);
 app.use('/users', userRoutes);
+app.use('/clients', clientRoutes);
+app.use('/staff', staffRoutes);
+app.use('/admin', adminRoutes);
 app.use('/appointments', appointmentRoutes);
 app.use('/bookings', bookingRoutes);
-app.use('/forms', formRoutes);
+app.use('/services', serviceRoutes);
 app.use('/payments', paymentRoutes);
 app.use('/promocodes', promocodeRoutes);
 app.use('/reviews', reviewRoutes);
-app.use('/services', serviceRoutes);
+app.use('/forms', formRoutes);
 app.use('/settings', settingsRoutes);
 app.use('/waitlist', waitlistRoutes);
-app.use('/staff', staffRoutes);
-app.use('/admin', adminRoutes);
-app.use('/reports', reportRoutes);
 app.use('/notifications', notificationRoutes);
+app.use('/reports', reportRoutes);
 app.use('/slots', slotRoutes);
 app.use('/webhooks', webhookRoutes);
-app.use('/emails', emailRoutes);
 
-// Background jobs initializer
+// Jobs monitoring
+app.get('/jobs/stats', async (req, res) => {
+  try {
+    const stats = await getQueueStats();
+    res.json({ success: true, stats });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve job stats',
+      error: error.message,
+    });
+  }
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Endpoint not found',
+    path: req.path,
+  });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Global error handler:', err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal server error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+  });
+});
+
+// Background jobs
 const initializeJobs = async () => {
   try {
-    console.log('🚀 Initializing background jobs...');
-    
+    console.log('Initializing background jobs...');
     const emailConfigured = await verifyEmailConfig();
     const smsConfigured = verifySMSConfig();
-    
+    const calendarConfigured = verifyCalendarConfig();
+
     if (!emailConfigured && !smsConfigured) {
-      console.warn('⚠️ Neither email nor SMS is configured. Reminders will not be sent.');
+      console.warn('Neither email nor SMS configured. Reminders will not be sent.');
     }
-    
+    if (!calendarConfigured) {
+      console.warn('Google Calendar not configured. Calendar sync disabled.');
+    }
+
     await scheduleDailyReminders();
-    console.log('✅ Background jobs initialized successfully');
+    console.log('Background jobs initialized successfully');
   } catch (error) {
-    console.error('❌ Error initializing background jobs:', error);
+    console.error('Error initializing background jobs:', error);
   }
 };
 
-// Test route
-app.get('/staff/hello', (req, res) => {
-  res.send('Hello from staff route!');
+// Server start
+app.listen(PORT, async () => {
+  console.log(`Hair Booking Backend running at http://localhost:${PORT}`);
+  console.log(`API Docs: http://localhost:${PORT}/api-docs`);
+  console.log(`Health Check: http://localhost:${PORT}/health`);
+  await initializeJobs();
+  console.log('Server ready to accept requests');
 });
 
-// Start server
-app.listen(PORT, async () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  
-  await initializeJobs();
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received: closing server');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received: closing server');
+  process.exit(0);
 });

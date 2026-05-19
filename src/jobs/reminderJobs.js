@@ -101,4 +101,5 @@ export const getQueueStats = async () => {
       { name: 'dailyReminders', schedule: '0 9 * * *', status: 'scheduled' }
     ]
   };
+  req.isInternalUpdate = true;
 };
